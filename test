@@ -1,0 +1,201 @@
+
+// data smooth, normal distribution, recude skewness "exponential increases"
+df['Log_GDP'] = np.log(df['GDP'])
+df['Log_Population'] = np.log(df['Population'])
+
+// help model to understand nonliear data 
+df['GDP_per_Capita_Squared'] = df['GDP per Capita'] ** 2
+
+// reduce effect high inflation spikes
+df['Inflation_Sqrt'] = np.sqrt(df['Inflation Rate'])
+
+//تأثير الدين علي الإقتصادي  ----> Debt_to_GDP_lag1
+df['Debt_to_GDP'] = df['Government Debt'] / df['GDP']
+df['Debt_to_GDP_growth'] = df['Debt_to_GDP'].pct_change()
+// تأثير الإقتصاد علي ثقه المستثمرين
+df['FDI_to_GDP'] = df['Foreign Direct Investment'] / df['GDP']
+// دول بتصدر أكتر ولا بتستورد
+df['Trade_Balance'] = df['Exports'] - df['Imports']
+// قوه الإنفتاح الإقتصادي الأكثر تأثراً بالأزمات
+df['Trade_to_GDP'] = (df['Exports'] + df['Imports']) / df['GDP']
+// بيعكس دور الحكومه في الإقتصاد
+df['Spending_to_GDP'] = df['Government Spending'] / df['GDP']
+// الأستثمارات الي الإقتصاد
+df['Investment_to_GDP'] = df['Investment'] / df['GDP']
+// العمله هل الدوله بتصرف أكتر من دخلها الخارجي ولا لا 
+df['CurrentAccount_to_GDP'] = df['Current Account Balance'] / df['GDP']
+
+// قد اي كل فرد بيساهم في الإقتصاد
+df['Exports_per_Capita'] = df['Exports'] / df['Population']
+// الإستهلاك الداخلي
+df['Imports_per_Capita'] = df['Imports'] / df['Population']
+// عبئ الدين علي الفرد الواحد 
+df['Debt_per_Capita'] = df['Government Debt'] / df['Population']
+// حجم الإنفاق الحكومي للفرد
+df['Spending_per_Capita'] = df['Government Spending'] / df['Population']
+
+
+// Phillips Curve علاقه التضخم بالبطاله و دا ليه علاقه ب 
+df['Inflation_Unemployment'] = df['Inflation Rate'] * df['Unemployment Rate']
+// حجم الإقتصاد مع النشاط الإستثماري 
+df['GDP_Investment'] = df['GDP'] * df['Investment']
+// لو التضخم عالي → سعر الفائدة غالبًا عالي
+// علاقة monetary policy reaction
+df['Interest_Inflation'] = df['Interest Rate'] * df['Inflation Rate']
+// cost of debt servicing 
+// كل ما الدين عالي والفائدة عالية → الدولة تحت ضغط مالي كبير
+df['Debt_Interest'] = df['Government Debt'] * df['Interest Rate']
+
+
+// قد إيه GDP زاد أو قل فعليًا
+df['GDP_diff'] = df['GDP'].diff()
+// هل التضخم بيتسارع ولا بيهدأ
+df['Inflation_diff'] = df['Inflation Rate'].diff()
+// تغير سوق العمل 
+// labor market stability
+df['Unemployment_diff'] = df['Unemployment Rate'].diff()
+
+
+
+
+
+
+
+// ده أهم من diff في الاقتصاد
+
+// لأنه بيقيس:
+
+// النمو كنسبة مئوية
+// GDP زاد 50 مليار
+
+// لكن ده ممكن يكون:
+// 10 % لدولة صغيرة
+// 1 % لدولة كبيرة
+df['GDP_growth_calc'] = df['GDP'].pct_change()
+
+// labor supply
+// GDP per capita
+df['Population_growth'] = df['Population'].pct_change()
+// investment = engine of growth
+df['Investment_growth'] = df['Investment'].pct_change()
+
+//  الفرق المهم جدًا
+// النوع	المعنى	        الاستخدام
+// diff	          قيمة مطلقة	short - term shock
+// pct_change	   نسبة نمو	     macro trends
+
+
+// بيمثل الاتجاه العام للاقتصاد
+// بيشيل noise(تقلبات قصيرة)
+df['GDP_MA3'] = df['GDP'].rolling(3).mean()
+// بيظهر الاتجاه الحقيقي للتضخم
+// مهم للبنوك المركزية
+df['Inflation_MA3'] = df['Inflation Rate'].rolling(3).mean()
+// بيقيس استقرار النمو الاقتصادي
+// لو عالي:
+// الاقتصاد غير مستقر
+df['GDP_STD3'] = df['GDP'].rolling(3).std()
+// بيقيس مدى اضطراب الأسعار
+// مهم جدًا في:
+// التضخم غير المستقر(hyperinflation risk)
+df['Inflation_volatility'] = df['Inflation Rate'].rolling(5).std()
+// بيقيس استقرار العملة
+// لو عالي:
+// currency crisis risk
+df['Exchange_volatility'] = df['Exchange Rate'].rolling(5).std()
+
+
+
+
+
+df['Total_Crisis'] = (
+    df['Financial_Crisis'] +
+    df['COVID_Crisis'] +
+    df['Energy_Crisis']
+)
+
+df['Crisis_Impact'] = df['Total_Crisis'] * df['GDP Growth']
+
+
+
+
+// بيمثل إن الاقتصاد مش بيتغير خطي
+// فيه:
+// تسارع في النمو
+// أو تباطؤ مع الزمن
+// GDP في 2000 مش زي 2025 مش بس “زيادة خطية”
+// لكن فيه curvature
+// بيضيف non - linear time trend
+// يساعد الموديل يفهم:
+// acceleration / deceleration over decades
+df['Year_Squared'] = df['Year'] ** 2
+// بيحول السنة من رقم كبير إلى “زمن مفهوم”
+// بدل 2025 → 25 سنة بعد 2000
+
+// 👉 ده مهم لأن:
+
+// الاقتصاد يتأثر بـ الزمن بشكل تدريجي
+
+// centered
+// easier to learn
+df['Years_since_2000'] = df['Year'] - 2000
+
+
+
+// اقتصاديًا:
+
+// ده بيجاوب على سؤال مهم جدًا:
+
+// “الدولة دي ترتيبها إيه عالميًا في نفس السنة؟”
+
+// مثال:
+
+// أمريكا = Rank 1
+// الصين = Rank 2
+// مصر = Rank 30
+
+// بدل ما تبص على رقم GDP الخام، بتبص على الموقع النسبي
+
+// بيشيل تأثير scale differences
+// يخلي الموديل يفهم relative position مش absolute value
+// مهم جدًا في:
+// cross - country forecasting
+// inequality modeling
+df['GDP_rank'] = df.groupby('Year')['GDP'].rank()
+// اقتصاديًا:
+// بيرتب الدول حسب التضخم في نفس السنة
+
+// 👉 بيساعدك تفهم:
+
+// مين أعلى دولة تضخمًا في العالم
+// مش الرقم نفسه
+// يقلل تأثير outliers(زي hyperinflation)
+// يحول المشكلة من regression → ranking problem(أسهل أحيانًا)
+df['Inflation_rank'] = df.groupby('Year')['Inflation Rate'].rank()
+
+
+// ✔ 1. Simplifies the problem
+
+// // بدل regression صعب → classification بسيط
+// 2. Reduces noise
+// الأرقام الدقيقة فيها تقلبات
+// الفئات أكثر استقرار
+
+// ✔ 3. Better interpretability
+
+// الموديل يقول:
+
+// “Inflation = High”
+
+// بدل:
+
+// “Inflation = 7.83 %
+df['Inflation_Level'] = pd.cut(df['Inflation Rate'],
+    bins = [-np.inf, 2, 5, 10, np.inf],
+    labels = ['Low', 'Normal', 'High', 'Extreme'])
+
+
+// from sklearn.decomposition import PCA
+
+pca = PCA(n_components = 5)
+X_pca = pca.fit_transform(df.select_dtypes(include = 'number'))
