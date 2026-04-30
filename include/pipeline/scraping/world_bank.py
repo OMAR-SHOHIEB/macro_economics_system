@@ -338,6 +338,28 @@ class WorldBankScraper:
         result = self.get_world_bank_data('NE.GDI.TOTL.CD', 'Investment', countries)
         return result if result is not None else self.get_sample_data('Investment')
     
+    def get_government_debt(self, countries=None):
+        """Government debt (% of GDP)"""
+        print("\nGovernment Debt")
+        time.sleep(2)
+        result = self.get_world_bank_data(
+            'GC.DOD.TOTL.GD.ZS',
+            'Government Debt',
+            countries
+        )
+        return result if result is not None else self.get_sample_data('Government Debt')
+    
+    def get_interest_rate(self, countries=None):
+        """Real Interest Rate (%)"""
+        print("\nInterest Rate")
+        time.sleep(2)
+        result = self.get_world_bank_data(
+            'FR.INR.RINR',
+            'Interest Rate',
+            countries
+        )
+        return result if result is not None else self.get_sample_data('Interest Rate')
+    
     def __del__(self):
         if self.session:
             self.session.close()
@@ -365,6 +387,8 @@ if __name__ == "__main__":
     gov_spending = wb.get_gov_spending()
     investment = wb.get_investment()
 
+    government_debt = wb.get_government_debt()
+    interest_rate = wb.get_interest_rate()
     life_expectancy = wb.get_life_expectancy()
         
     all_data = pd.concat([
@@ -379,6 +403,8 @@ if __name__ == "__main__":
     imports,
     gov_spending,
     investment,
+    government_debt,
+    interest_rate,
     life_expectancy
 ], ignore_index=True)
     

@@ -25,6 +25,12 @@ class ReadMerge:
         return pd.read_csv(file_path)
 
     def final(self):
+        self.dfi.rename(columns={
+        "country": "Country",
+        "year": "Year"
+        }, inplace=True)
+        
+        self.dfi = self.dfi.drop(columns=["country_code"])
         return self.dfw.merge(
             self.dfi,
             on=["Country", "Year"],
@@ -89,7 +95,7 @@ class EconomicImputer:
                     if c not in [target, self.country_col]]
 
 
-        train_enc = pd.get_dummies(train, columns=[self.country_col], drop_first=True)
+        train_enc = pd.get_dummies(train, columns=[self.country_col,], drop_first=True)
         test_enc = pd.get_dummies(test, columns=[self.country_col], drop_first=True)
 
 
@@ -119,7 +125,7 @@ class EconomicImputer:
 
         if model_targets is None:
             model_targets = ["Exports", "Imports",
-                             "Government Spending", "Investment"]
+                             "Government Spending", "Investment", "GDP Growth"]
 
         for col in model_targets:
             if col in df.columns:
