@@ -4,9 +4,11 @@ I need the pipeline in the good standart to improve it in the future in "scalabi
 import requests
 import pandas as pd
 from countries import retrun_countries
+from pathlib import Path
 
 import sys
-sys.path.append(r"D:\project\Data Science\macro_data_project")
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+sys.path.append(str(PROJECT_ROOT))
 from include.pipeline.storage.save_csv import imf_save
 
 countries = retrun_countries()

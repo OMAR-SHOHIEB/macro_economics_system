@@ -5,13 +5,14 @@ from typing import Optional, List
 import random
 from pathlib import Path
 from countries import retrun_countries
-import sys
+from pathlib import Path
 
-sys.path.append(r"D:\project\Data Science\macro_data_project")
+import sys
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+sys.path.append(str(PROJECT_ROOT))
 from include.pipeline.storage.save_csv import world_save
 
 COUNTRIES_MAPPING = retrun_countries()
-
 ISO_CODES = list(COUNTRIES_MAPPING.values())
 COUNTRY_NAMES = list(COUNTRIES_MAPPING.keys())
 YEAR_START = 1980
