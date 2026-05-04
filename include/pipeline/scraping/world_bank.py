@@ -4,10 +4,11 @@ import time
 from typing import Optional, List
 import random
 from pathlib import Path
-from countries import retrun_countries
+from pipeline.scraping.countries import retrun_countries
 from pathlib import Path
 
 import sys
+sys.path.append('/usr/local/airflow/include')
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.append(str(PROJECT_ROOT))
 from include.pipeline.storage.save_csv import world_save

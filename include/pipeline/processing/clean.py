@@ -4,7 +4,7 @@ from sklearn.ensemble import RandomForestRegressor
 import sys
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.append(str(PROJECT_ROOT))
-from include.pipeline.storage.save_csv import data_clean
+from pipeline.storage.save_csv import data_clean
 
 from pipeline.processing.read_data import ReadMergeScrape
 

@@ -68,5 +68,6 @@ def get_exchange_rate_panel(countries):
 
     return df.sort_values(["country", "year"]).reset_index(drop=True)
 
-df_exchange = get_exchange_rate_panel(countries)
-imf_save(df_exchange)
+if __name__ == "__main__":
+    df_exchange = get_exchange_rate_panel(countries)
+    imf_save(df_exchange)
