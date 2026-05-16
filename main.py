@@ -18,17 +18,21 @@ class GDPPipeline:
 
         self.df = None
         self.feature_cols = None
+
         self.scaler_X = None
         self.scaler_y = None
 
-        self.bilstm = None
-        self.xgb = None
-        self.lgbm = None
+        self.model = None
+        self.xgb_model = None
+        self.lgbm_model = None
+
+        self.lookback = LOOKBACK
+        self.forecast_horizon = FORECAST_HORIZON
 
     # ─────────────────────────────
     # Load + preprocess
     # ─────────────────────────────
-    def prepare_data(self):
+    def prepare(self):
 
         self.df = load_data(DATA_PATH)
 
@@ -38,10 +42,7 @@ class GDPPipeline:
             self.scaler_X,
             self.scaler_y,
             _
-        ) = preprocess_data(
-            self.df,
-            TARGET_COLUMN
-        )
+        ) = preprocess_data(self.df, TARGET_COLUMN)
 
         (
             self.X_train,
@@ -55,25 +56,25 @@ class GDPPipeline:
             self.df,
             self.feature_cols,
             TARGET_COLUMN,
-            LOOKBACK,
-            FORECAST_HORIZON,
+            self.lookback,
+            self.forecast_horizon,
             TEST_SIZE
         )
 
     # ─────────────────────────────
-    # Scaling
+    # Scale data
     # ─────────────────────────────
     def scale(self):
 
-        _, seq_len, n_features = self.X_train.shape
+        _, seq_len, n_feat = self.X_train.shape
 
         self.X_train = self.scaler_X.fit_transform(
-            self.X_train.reshape(-1, n_features)
-        ).reshape(-1, seq_len, n_features)
+            self.X_train.reshape(-1, n_feat)
+        ).reshape(-1, seq_len, n_feat)
 
         self.X_test = self.scaler_X.transform(
-            self.X_test.reshape(-1, n_features)
-        ).reshape(-1, seq_len, n_features)
+            self.X_test.reshape(-1, n_feat)
+        ).reshape(-1, seq_len, n_feat)
 
         self.y_train = self.scaler_y.fit_transform(
             self.y_train.reshape(-1, 1)
@@ -83,18 +84,20 @@ class GDPPipeline:
             self.y_test.reshape(-1, 1)
         )
 
-
+    # ─────────────────────────────
+    # Train models
+    # ─────────────────────────────
     def train(self):
 
         # BiLSTM
-        self.bilstm = build_bilstm_model(
-            LOOKBACK,
+        self.model = build_bilstm_model(
+            self.lookback,
             len(self.feature_cols),
             self.df["Country_id"].nunique(),
             EMBEDDING_DIM
         )
 
-        self.bilstm.fit(
+        self.model.fit(
             [self.X_train, self.c_train],
             self.y_train,
             validation_data=(
@@ -109,15 +112,17 @@ class GDPPipeline:
         )
 
         # XGBoost
-        self.xgb = build_xgboost_model()
-        self.xgb.fit(
+        self.xgb_model = build_xgboost_model()
+
+        self.xgb_model.fit(
             self.X_train.reshape(self.X_train.shape[0], -1),
             self.y_train.flatten()
         )
 
         # LightGBM
-        self.lgbm = build_lightgbm_model()
-        self.lgbm.fit(
+        self.lgbm_model = build_lightgbm_model()
+
+        self.lgbm_model.fit(
             self.X_train.reshape(self.X_train.shape[0], -1),
             self.y_train.flatten()
         )
@@ -127,20 +132,19 @@ class GDPPipeline:
     # ─────────────────────────────
     def predict(self, country, model="bilstm"):
 
-        return predict_country(
-            self,
-            country,
-            model
-        )
+        return predict_country(self, country, model)
 
 
-
+# ─────────────────────────────
+# RUN
+# ─────────────────────────────
 if __name__ == "__main__":
 
     pipeline = GDPPipeline()
 
-    pipeline.prepare_data()
+    pipeline.prepare()
     pipeline.scale()
     pipeline.train()
+
     pipeline.predict("Germany", "xgboost")
     pipeline.predict("China", "lightgbm")

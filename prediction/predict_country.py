@@ -1,30 +1,88 @@
 import numpy as np
 
 
-def predict_country(predictor, country_name, model_type="bilstm"):
+def predict_country(pipeline, country_name, model_type="bilstm"):
 
-    grp = predictor.df[predictor.df["Country"] == country_name].sort_values("Year")
+    # ─────────────────────────────
+    # Get country data
+    # ─────────────────────────────
+    grp = pipeline.df[
+        pipeline.df["Country"] == country_name
+    ].sort_values("Year")
 
-    grp = grp.tail(predictor.lookback)
+    # ─────────────────────────────
+    # Safety checks
+    # ─────────────────────────────
+    if grp.empty:
+        raise ValueError(f"Country not found: {country_name}")
 
-    X = predictor.scaler_X.transform(grp[predictor.feature_cols].values)
-    X = X.reshape(1, predictor.lookback, -1)
+    if len(grp) < pipeline.lookback:
+        raise ValueError(
+            f"Not enough data for {country_name}. "
+            f"Need {pipeline.lookback}, got {len(grp)}"
+        )
+
+    # ─────────────────────────────
+    # Take last sequence
+    # ─────────────────────────────
+    grp = grp.tail(pipeline.lookback)
+
+    X_raw = grp[pipeline.feature_cols].values
+
+    # IMPORTANT: scaler must NOT receive empty data
+    if X_raw.shape[0] == 0:
+        raise ValueError("Empty feature array after selection")
+
+    X = pipeline.scaler_X.transform(X_raw)
+
+    X = X.reshape(1, pipeline.lookback, -1)
 
     c_id = np.array([[grp["Country_id"].iloc[0]]])
 
+    # ─────────────────────────────
+    # Model selection
+    # ─────────────────────────────
     if model_type == "bilstm":
-        pred = predictor.model.predict([X, c_id], verbose=0)
+
+        pred = pipeline.model.predict([X, c_id], verbose=0)
 
     elif model_type == "xgboost":
-        pred = predictor.xgb_model.predict(X.reshape(1, -1)).reshape(-1, 1)
+
+        pred = pipeline.xgb_model.predict(
+            X.reshape(1, -1)
+        ).reshape(-1, 1)
+
+    elif model_type == "lightgbm":
+
+        pred = pipeline.lgbm_model.predict(
+            X.reshape(1, -1)
+        ).reshape(-1, 1)
 
     else:
-        pred = predictor.lgbm_model.predict(X.reshape(1, -1)).reshape(-1, 1)
 
-    pred = np.expm1(predictor.scaler_y.inverse_transform(pred))[0][0]
+        raise ValueError(
+            "model_type must be: bilstm, xgboost, lightgbm"
+        )
 
-    year = grp["Year"].max() + predictor.forecast_horizon
+    # ─────────────────────────────
+    # Inverse transform
+    # ─────────────────────────────
+    pred = np.expm1(
+        pipeline.scaler_y.inverse_transform(pred)
+    )[0][0]
 
-    print(country_name, "|", year, "|", model_type, "|", f"${pred:,.0f}")
+    # ─────────────────────────────
+    # Forecast year
+    # ─────────────────────────────
+    year = grp["Year"].max() + pipeline.forecast_horizon
 
-    return pred
+    print(
+        f"{country_name} | {year} | {model_type} | ${pred:,.0f}"
+    )
+
+    return {
+        "country": country_name,
+        "year": year,
+        "model": model_type,
+        "gdp": float(pred)
+    }
