@@ -77,6 +77,29 @@ class Feature_Selection:
 
         return selected, dropped
 
+    def recursive_feature_elimination(self, train, features, target, n_features_to_select=10):
+        """
+        Performs Recursive Feature Elimination (RFE) using XGBoost.
+        """
+        from sklearn.feature_selection import RFE
+        
+        estimator = XGBRegressor(
+            n_estimators=100, 
+            max_depth=5, 
+            learning_rate=0.05, 
+            random_state=42
+        )
+
+        features = [f for f in features if f not in self.ignore_cols]
+        
+        rfe = RFE(estimator=estimator, n_features_to_select=n_features_to_select, step=1)
+        rfe.fit(train[features], train[target])
+        
+        selected = [f for i, f in enumerate(features) if rfe.support_[i]]
+        dropped  = [f for i, f in enumerate(features) if not rfe.support_[i]]
+        
+        return selected, dropped
+
 if __name__ == "__main__":
 
     data = ReadTrainValTest()

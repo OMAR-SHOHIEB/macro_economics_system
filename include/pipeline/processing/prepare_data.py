@@ -4,6 +4,7 @@ import tensorflow as tf
 import numpy as np
 from read_data import Read_Selected
 
+
 class Handling():
     def __init__(self):
         pass 
@@ -100,160 +101,13 @@ class Handling():
         
         # Map to proper input format
         def map_fn(country, ts, target):
-            return {"country_in": country, "ts_in": ts}, target
+            # The country input needs to be (None, 1) but Dataset from tensor slices 
+            # might give (batch,) if not careful. The model expects (batch, 1) 
+            # because of Embedding input_length or just Input shape (1,).
+            # Actually layers.Input(shape=(1,)) means it expects an array of size 1.
+            return {"country_in": tf.expand_dims(country, -1), "ts_in": ts}, target
         
         ds = ds.map(map_fn)
         
         # Shuffle, batch, and prefetch
-        return ds.shuffle(min(1000, len(X_country))).batch(batch_size).prefetch(tf.data.AUTOTUNE)
-
-    
-class Modeling():
-    @staticmethod
-    def build_multi_target_lstm(num_countries, num_features, num_targets, window_size=5):
-        """
-        Build LSTM model for panel data time series forecasting.
-        
-        Args:
-            num_countries: Number of unique countries
-            num_features: Number of features in each timestep
-            num_targets: Number of output targets (usually 1)
-            window_size: Size of input windows
-            
-        Returns:
-            Compiled Keras model
-        """
-        # Country embedding branch
-        country_in = layers.Input(shape=(1,), name="country_in", dtype=tf.int32)
-        emb = layers.Embedding(num_countries, 8)(country_in)
-        emb = layers.Reshape((8,))(emb)
-        emb_seq = layers.RepeatVector(window_size)(emb)  # (batch, window_size, 8)
-
-        # Time series input branch
-        ts_in = layers.Input(shape=(window_size, num_features), name="ts_in")
-
-        # Merge country embedding with time series features
-        merged = layers.Concatenate()([ts_in, emb_seq])  # (batch, window_size, num_features+8)
-
-        # LSTM layers
-        x = layers.LSTM(64, return_sequences=True, dropout=0.2)(merged)
-        x = layers.LSTM(32, dropout=0.2)(x)
-        x = layers.BatchNormalization()(x)
-        x = layers.Dense(32, activation='relu')(x)
-        x = layers.Dropout(0.2)(x)
-
-        # Output layer
-        output = layers.Dense(num_targets, name="output")(x)
-
-        model = Model(inputs=[country_in, ts_in], outputs=output)
-
-        # Custom R² metric
-        def r2_score(y_true, y_pred):
-            ss_res = tf.reduce_sum(tf.square(y_true - y_pred))
-            ss_tot = tf.reduce_sum(tf.square(y_true - tf.reduce_mean(y_true)))
-            return 1 - ss_res / (ss_tot + tf.keras.backend.epsilon())
-        
-        optimizer = tf.keras.optimizers.Adam(learning_rate=0.0001)
-
-        model.compile(
-            optimizer=optimizer,
-            loss='mse',
-            metrics=['mae', r2_score]
-        )
-
-        return model
-
-
-if __name__ == "__main__":
-
-    # Load data
-    obj = Read_Selected()
-    train_, val_, test_ = obj.load_data()
-
-    print("=" * 60)
-    print("DATA PREPARATION")
-    print("=" * 60)
-    print(f"Train shape: {train_.shape}")
-    print(f"Val shape: {val_.shape}")
-    print(f"Test shape: {test_.shape}")
-    print(f"\nData types:\n{train_.dtypes}\n")
-
-    # Handle country encoding
-    H = Handling()
-    train_, val_, test_, num_countries = H.handle_country(train_, val_, test_)
-    
-    print(f"Number of countries: {num_countries}")
-
-    # Sort time series WITHIN each country (CRITICAL for panel data)
-    train_ = train_.sort_values(['country_id', 'Year'])
-    val_   = val_.sort_values(['country_id', 'Year'])
-    test_  = test_.sort_values(['country_id', 'Year'])
-
-    target_col = "GDP"
-
-    # Remove target and metadata columns from features
-    selected_features = [c for c in train_.columns 
-                        if c != target_col and c != 'country_id' and c != 'Year']
-    
-    print(f"Selected features: {selected_features}")
-
-    window = 5
-
-    print("\n" + "=" * 60)
-    print("PREPARING DATASETS")
-    print("=" * 60)
-    
-    # Prepare datasets with proper panel data handling
-    train = H.prepare_multi_output_ds_panel(train_, selected_features, target_col, window)
-    val     = H.prepare_multi_output_ds_panel(val_, selected_features, target_col, window)
-    test   = H.prepare_multi_output_ds_panel(test_, selected_features, target_col, window)
-
-    # Verify shapes
-    print("\n" + "=" * 60)
-    print("VERIFYING DATA SHAPES")
-    print("=" * 60)
-    
-    for batch_x, batch_y in train.take(1):
-        print(f"Country input shape: {batch_x['country_in'].shape} (batch,)")
-        print(f"TS input shape: {batch_x['ts_in'].shape} (batch, window_size, n_features)")
-        print(f"Target shape: {batch_y.shape} (batch,)")
-        print(f"\nSample country ID: {batch_x['country_in'][0].numpy()}")
-        print(f"Sample target value: {batch_y[0].numpy():.2f}")
-
-    # Build model
-    print("\n" + "=" * 60)
-    print("BUILDING MODEL")
-    print("=" * 60)
-    
-    md = Modeling()
-
-    model = md.build_multi_target_lstm(
-        num_countries=num_countries,
-        num_features=len(selected_features),
-        num_targets=1,
-        window_size=window
-    )
-
-    print(model.summary())
-    
-    model.fit(
-        train,
-        validation_data=val,
-        epochs=50,
-        verbose=1,
-        callbacks=[
-            tf.keras.callbacks.EarlyStopping(
-                monitor='val_loss',
-                patience=5,
-                restore_best_weights=True
-            )
-        ]
-    )
-    
-    print("\n" + "=" * 60)
-    print("TEST EVALUATION")
-    print("=" * 60)
-    test_loss, test_mae, test_r2 = model.evaluate(test, verbose=0)
-    print(f"Test Loss (MSE): {test_loss:.6f}")
-    print(f"Test MAE: {test_mae:.6f}")
-    print(f"Test R²: {test_r2:.6f}")
+        return ds.shuffle(min(1000, len(X_country))).batch(batch_size).prefetch(tf.data.AUTOTUNE)

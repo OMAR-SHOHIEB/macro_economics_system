@@ -7,12 +7,14 @@ sys.path.append(str(PROJECT_ROOT))
 from pipeline.storage.save_csv import data_clean
 
 from pipeline.processing.read_data import ReadMergeScrape
+from pipeline.processing.hampel import HampelFilter
 
 class EconomicImputer:
     def __init__(self, country_col="Country", time_col="Year"):
         self.country_col = country_col
         self.time_col = time_col
         self.models = {}
+        self.outlier_filter = HampelFilter(country_col=country_col)
 
 
     def basic_impute(self, df):
@@ -90,6 +92,9 @@ class EconomicImputer:
 
   
     def fit_transform(self, df, model_targets=None):
+        # Apply outlier handling first
+        df = self.outlier_filter.transform(df)
+        
         df = self.basic_impute(df)
 
         if model_targets is None:
