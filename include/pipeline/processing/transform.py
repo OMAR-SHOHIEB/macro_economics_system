@@ -24,7 +24,7 @@ class Make_Transform:
 # =========================
 # ____ Standard Scaler ____
 # =========================
-    def standard_scaler(self, train, val, test):
+    def standard_scaler(self, train, test):
         # """
         # StandardScaler (Z-score normalization)
 
@@ -51,10 +51,9 @@ class Make_Transform:
         self.scaler = StandardScaler()
 
         train[cols] = self.scaler.fit_transform(train[cols])
-        val[cols]   = self.scaler.transform(val[cols])
         test[cols]  = self.scaler.transform(test[cols])
 
-        return train, val, test
+        return train, test
 
 # =========================
 # _____ Robust Scaler _____
@@ -98,7 +97,7 @@ class Make_Transform:
 # =========================
 # ______ Log Transform ____
 # =========================
-    def log(self, train, val, test):
+    def log(self, train, test):
         # """
         # Log Transformation
 
@@ -128,15 +127,14 @@ class Make_Transform:
 
         for c in cols:
             train[c] = np.log(train[c].replace(0, np.nan))
-            val[c]   = np.log(val[c].replace(0, np.nan))
             test[c]  = np.log(test[c].replace(0, np.nan))
 
-        return train, val, test
+        return train, test
 
 # =========================
 # ______ Log1p Transform __
 # =========================
-    def log1p(self, train, val, test):
+    def log1p(self, train, test):
         # """
         # Log1p Transformation
 
@@ -168,7 +166,6 @@ class Make_Transform:
 
         for c in cols:
             train[c] = np.log1p(train[c])
-            val[c]   = np.log1p(val[c])
             test[c]  = np.log1p(test[c])
 
-        return train, val, test
+        return train,  test

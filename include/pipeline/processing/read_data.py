@@ -67,21 +67,20 @@ class ReadTrainValTest:
         self.BASE_DIR = Path(__file__).resolve().parents[3]
 
         self.train_path = self.BASE_DIR / "data" / "processed" / 'split' / "train_data.csv"
-        self.val_path   = self.BASE_DIR / "data" / "processed" / 'split'/ "validation_data.csv"
         self.test_path  = self.BASE_DIR / "data" / "processed" / 'split' / "test_data.csv"
 
     def load_data(self):
         
         def _check_files(self):
-             for path in [self.train_path, self.val_path, self.test_path]:
+             for path in [self.train_path, self.test_path]:
                  if not path.exists():
                     raise FileNotFoundError(f"{path} not found.")
         _check_files(self)
         train = pd.read_csv(self.train_path)
-        val   = pd.read_csv(self.val_path)
+
         test  = pd.read_csv(self.test_path)
 
-        return train, val, test
+        return train, test
         
         
 class Read_Selected:
@@ -89,20 +88,18 @@ class Read_Selected:
         self.BASE_DIR = Path(__file__).resolve().parents[3]
 
         self.train_path = self.BASE_DIR / "data" / "processed" / 'scaled_transformed' / "train_.csv"
-        self.val_path = self.BASE_DIR / "data" / "processed" / 'scaled_transformed' / "val_.csv"
-        self.test_path = self.BASE_DIR / "data" / "processed" / 'scaled_transformed' / "test.csv"
+        self.test_path = self.BASE_DIR / "data" / "processed" / 'scaled_transformed' / "test_.csv"
 
     def load_data(self):
         def _check_files(self):
-            for path in [self.train_path, self.val_path, self.test_path]:
+            for path in [self.train_path, self.test_path]:
                 if not path.exists():
                     raise FileNotFoundError(f"{path} not found.")
         _check_files(self)
         train = pd.read_csv(self.train_path)
-        val = pd.read_csv(self.val_path)
         test = pd.read_csv(self.test_path)
 
-        return train, val, test
+        return train, test
 
 
 class Read_Merged:
@@ -120,17 +117,15 @@ class Read_SelectedSplit:
     def __init__(self):
         self.BASE_DIR = Path(__file__).resolve().parents[3]
         self.train_path = self.BASE_DIR / "data" / "processed" / "selected" / "train_data.csv"
-        self.val_path = self.BASE_DIR / "data" / "processed" / "selected" / "validation_data.csv"
         self.test_path = self.BASE_DIR / "data" / "processed" / "selected" / "test_data.csv"
 
     def load_data(self):
         def _check_files(self):
-            for path in [self.train_path, self.val_path, self.test_path]:
+            for path in [self.train_path, self.test_path]:
                 if not path.exists():
                     raise FileNotFoundError(f"{path} not found. Run select_features first.")
         _check_files(self)
         train = pd.read_csv(self.train_path)
-        val = pd.read_csv(self.val_path)
         test  = pd.read_csv(self.test_path)
 
-        return train, val, test
+        return train, test

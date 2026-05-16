@@ -40,6 +40,10 @@ class EconomicImputer:
                 df[col] = df.groupby(self.country_col)[col].transform(
                     lambda x: x.ffill().bfill()
                 )
+                
+                df[col] = df[col].transform(
+                    lambda x: x.median()
+                )
 
 
             elif col in ["Life Expectancy"]:
